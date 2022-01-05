@@ -17,6 +17,8 @@ class Trap implements \ArrayAccess, \Stringable
       'event' => []
     ];
 
+    if (count($input) < 4) return;  // to small to be a SNMP Trap
+
     $this->getSys($input);
     $this->getEvent($input);
   }
@@ -24,10 +26,14 @@ class Trap implements \ArrayAccess, \Stringable
   private function getSys(array $input)
   {
     $hostname = trim($input[0]);
-    $this->container['sys']['hostname'] = $hostname != "<UNKNOWN>" ? $hostname : null;
+    $hostname = $hostname != "<UNKNOWN>" ? $hostname : null;
+    $hostname = $hostname ?: gethostbyaddr($this->container['sys']['ipAddress']);
+    $hostname = $hostname ?: '';
+    $this->container['sys']['hostname'] = $hostname;
+
 
     preg_match('/UDP: \[([^\]]+)\]:/', $input[1], $matches);
-    $this->container['sys']['ip'] = $matches[1];
+    $this->container['sys']['ipAddress'] = $matches[1];
 
     $this->container['sys']['uptime'] = trim(strstr($input[2], " "));
   }

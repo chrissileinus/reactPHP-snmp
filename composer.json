@@ -1,0 +1,16 @@
+{
+    "name": "chrissileinus/snmp-php",
+    "type": "library",
+    "autoload": {
+        "psr-4": {
+            "Chrissileinus\\SNMP\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "chrissileinus",
+            "email": "chrissileinus@googlemail.com"
+        }
+    ],
+    "require": {}
+}
