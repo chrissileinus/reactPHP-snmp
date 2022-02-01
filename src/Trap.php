@@ -25,15 +25,14 @@ class Trap implements \ArrayAccess, \Stringable
 
   private function getSys(array $input)
   {
+    preg_match('/UDP: \[([^\]]+)\]:/', $input[1], $matches);
+    $this->container['sys']['ipAddress'] = $matches[1];
+
     $hostname = trim($input[0]);
     $hostname = $hostname != "<UNKNOWN>" ? $hostname : null;
     $hostname = $hostname ?: gethostbyaddr($this->container['sys']['ipAddress']);
     $hostname = $hostname ?: '';
     $this->container['sys']['hostname'] = $hostname;
-
-
-    preg_match('/UDP: \[([^\]]+)\]:/', $input[1], $matches);
-    $this->container['sys']['ipAddress'] = $matches[1];
 
     $this->container['sys']['uptime'] = trim(strstr($input[2], " "));
   }
@@ -58,17 +57,5 @@ class Trap implements \ArrayAccess, \Stringable
         }
       }
     }
-  }
-
-  /**
-   * upTimeToFloat
-   *
-   * @param  string $time example: \<days>:\<hours>:\<minutes>:\<seconds> '0:20:10:59.70'
-   * @return float
-   */
-  public static function upTimeToFloat(string $time): float
-  {
-    preg_match('/(\d+):(\d+):(\d+):([\d.]+)/', $time, $matches);
-    return (($matches[1] * 24 + $matches[2]) * 60 + $matches[3]) * 60 + $matches[4];
   }
 }
