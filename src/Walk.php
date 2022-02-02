@@ -9,6 +9,11 @@ class Walk implements \ArrayAccess, \Stringable
   use containerArrayAccess;
   use containerStringable;
 
+  public function __debugInfo()
+  {
+    return $this->container;
+  }
+
   private string $host;
 
   public function __construct(string $host)
@@ -16,7 +21,9 @@ class Walk implements \ArrayAccess, \Stringable
     if (!ip2long($host)) throw new \Exception("Not a valid IP Address '{$host}'");
 
     $this->host = $host;
-    $this->container = [];
+    $this->container = [
+      'SysAddress' => gethostbyname($host),
+    ];
   }
 
   private static function getValue($matches)
@@ -67,7 +74,7 @@ class Walk implements \ArrayAccess, \Stringable
 
   public function getLLDPremote()
   {
-    return $this->run(".1.0.8802.1.1.2.1.4")->then(
+    return $this->run(".1.0.8802.1.1.2.1.4.1")->then(
       function ($data) {
         foreach (explode(PHP_EOL, $data) as $line) {
           if (preg_match('/(?<mib>.+)::(?<type>[^.]+)\.[\d]+\.(?<counter>\d+)\.(?<sub>.+) (?<value>.*)/', $line, $matches)) {
@@ -79,11 +86,18 @@ class Walk implements \ArrayAccess, \Stringable
             if (preg_match('/lldpRemSys(.+)/', $matches['type'], $m)) {
               $this->container['Ports'][$matches['counter']]['Remote']['Sys' . $m[1]] = array_key_exists('Sys' . $m[1], $this->container['Ports'][$matches['counter']]['Remote']) ? $this->container['Ports'][$matches['counter']]['Remote']['Sys' . $m[1]] .= $value : $value;
             }
-            if (preg_match('/ipV4.\"(.+)\"/', $matches['sub'], $m)) {
-              $this->container['Ports'][$matches['counter']]['Remote']['SysAddress'] = unpack("c*", $m[1]);
-            }
           }
         }
+        return $this->run("-Oqn", ".1.0.8802.1.1.2.1.4.2.1.3")->then(
+          function ($data) {
+
+            foreach (explode(PHP_EOL, $data) as $line) {
+              if (preg_match('/(?<counter>\d+)\.\d+\.1\.4\.(?<ipAddress>\d+\.\d+\.\d+\.\d+) .*/', $line, $m)) {
+                $this->container['Ports'][$m['counter']]['Remote']['SysAddress'] = $m['ipAddress'];
+              }
+            }
+          }
+        );
       }
     );
   }
