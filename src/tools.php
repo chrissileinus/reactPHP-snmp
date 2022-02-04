@@ -15,4 +15,55 @@ class tools
     preg_match('/(\d+):(\d+):(\d+):([\d.]+)/', $time, $matches);
     return (($matches[1] * 24 + $matches[2]) * 60 + $matches[3]) * 60 + $matches[4];
   }
+
+
+  /**
+   * Get LLDP from every switch and follow the tree through the hole accessable network.
+   *
+   * @param  string                          $ipAddress	from Switch where to start the Walk
+   * @param  callable|null                   $callback	to run on every result
+   * @param  array                           $result		
+   * @param  bool                            $withInterfaces	if true also collect all interfaces
+   * @return \React\Promise\PromiseInterface
+   */
+  public static function LLDPWalk(
+    string $ipAddress,
+    callable $callback = null,
+    array &$result = [],
+    bool $withInterfaces = false
+  ): \React\Promise\PromiseInterface {
+    $result[$ipAddress] = new Walk($ipAddress);
+
+    $jobs = [];
+    $jobs[] = $result[$ipAddress]->getLLDPlocal();
+    $jobs[] = $result[$ipAddress]->getLLDPremote();
+    if ($withInterfaces) $jobs[] = $result[$ipAddress]->getInterfaces();
+
+    return \React\Promise\all($jobs)->then(function () use ($ipAddress, &$result, $callback, $withInterfaces) {
+      if (!isset($result[$ipAddress]['Ports'])) return;
+      if (is_callable($callback)) $callback($result[$ipAddress]);
+
+      $jobs = [];
+      foreach ($result[$ipAddress]['Ports'] as $entry) {
+        if (
+          array_key_exists('Remote', $entry) &&
+          array_key_exists('SysAddress', $entry['Remote']) &&
+          !array_key_exists($entry['Remote']['SysAddress'], $result)
+        ) {
+          $jobs[] = self::LLDPWalk(
+            ipAddress: $entry['Remote']['SysAddress'],
+            result: $result,
+            callback: $callback,
+            withInterfaces: $withInterfaces
+          );
+        }
+      }
+      return \React\Promise\all($jobs)->then(function () use (&$result) {
+        foreach ($result as $address => $entry) {
+          // if (!isset($entry['SysAddress'])) unset($result[$address]);
+        }
+        return $result;
+      });
+    });
+  }
 }

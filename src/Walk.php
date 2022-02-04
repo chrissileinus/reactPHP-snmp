@@ -18,12 +18,10 @@ class Walk implements \ArrayAccess, \Stringable
 
   public function __construct(string $host)
   {
-    if (!ip2long($host)) throw new \Exception("Not a valid IP Address '{$host}'");
+    // if (!ip2long($host)) throw new \Exception("Not a valid IP Address '{$host}'");
 
     $this->host = $host;
-    $this->container = [
-      'SysAddress' => gethostbyname($host),
-    ];
+    $this->container = [];
   }
 
   private static function getValue($matches)
@@ -37,9 +35,12 @@ class Walk implements \ArrayAccess, \Stringable
   {
     return $this->run(".1.3.6.1.2.1.2.2.1")->then(
       function ($data) {
+        $matched = false;
+
         foreach (explode(PHP_EOL, $data) as $line) {
           if (preg_match('/(?<mib>.+)::(?<type>[^.]+)\.(?<counter>[^ ]+) (?<value>.*)/', $line, $matches)) {
             $value = self::getValue($matches);
+            $matched = true;
 
             if (preg_match('/if(.+)/', $matches['type'], $m)) {
               $this->container['Interfaces'][$matches['counter']][$m[1]] = $value;
@@ -47,6 +48,8 @@ class Walk implements \ArrayAccess, \Stringable
             }
           }
         }
+
+        if ($matched) $this->container['SysAddress'] = $this->host;
       }
     );
   }
@@ -55,9 +58,12 @@ class Walk implements \ArrayAccess, \Stringable
   {
     return $this->run(".1.0.8802.1.1.2.1.3")->then(
       function ($data) {
+        $matched = false;
+
         foreach (explode(PHP_EOL, $data) as $line) {
           if (preg_match('/(?<mib>.+)::(?<type>[^.]+)\.(?<counter>[^ ]+) (?<value>.*)/', $line, $matches)) {
             $value = self::getValue($matches);
+            $matched = true;
 
             if (preg_match('/lldpLocPort(.+)/', $matches['type'], $m)) {
               $this->container['Ports'][$matches['counter']][$m[1]] = $value;
@@ -68,6 +74,8 @@ class Walk implements \ArrayAccess, \Stringable
             }
           }
         }
+
+        if ($matched) $this->container['SysAddress'] = $this->host;
       }
     );
   }
@@ -76,9 +84,12 @@ class Walk implements \ArrayAccess, \Stringable
   {
     return $this->run(".1.0.8802.1.1.2.1.4.1")->then(
       function ($data) {
+        $matched = false;
+
         foreach (explode(PHP_EOL, $data) as $line) {
           if (preg_match('/(?<mib>.+)::(?<type>[^.]+)\.[\d]+\.(?<counter>\d+)\.(?<sub>.+) (?<value>.*)/', $line, $matches)) {
             $value = self::getValue($matches);
+            $matched = true;
 
             if (preg_match('/lldpRemPort(.+)/', $matches['type'], $m)) {
               $this->container['Ports'][$matches['counter']]['Remote']['Port' . $m[1]] = $value;
@@ -88,6 +99,9 @@ class Walk implements \ArrayAccess, \Stringable
             }
           }
         }
+
+        if ($matched) $this->container['SysAddress'] = $this->host;
+
         return $this->run("-Oqn", ".1.0.8802.1.1.2.1.4.2.1.3")->then(
           function ($data) {
 
