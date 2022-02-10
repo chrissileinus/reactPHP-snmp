@@ -28,6 +28,8 @@ class Walk implements \ArrayAccess, \Stringable
   {
     $value = trim($matches['value'], " \t\n\r\0\x0B\"");
     if ($value == intval($value)) return intval($value);
+    if ($value == "true") return true;
+    if ($value == "false") return false;
     return $value;
   }
 
@@ -50,6 +52,35 @@ class Walk implements \ArrayAccess, \Stringable
         }
 
         if ($matched) $this->container['SysAddress'] = $this->host;
+        return $this->container;
+      }
+    );
+  }
+
+  public function getSTP()
+  {
+    return $this->run(".1.3.6.1.2.1.17.2")->then(
+      function ($data) {
+        $matched = false;
+
+        foreach (explode(PHP_EOL, $data) as $line) {
+          if (preg_match('/(?<mib>.+)::(?<type>[^.]+)\.(?<counter>[^ ]+) (?<value>.*)/', $line, $matches)) {
+            $value = self::getValue($matches);
+            $matched = true;
+
+            if (preg_match('/dot1dStpPort(.+)/', $matches['type'], $m)) {
+              $this->container['STP']['Ports'][$matches['counter']][$m[1]] = $value;
+              continue;
+            }
+            if (preg_match('/dot1dStp(.+)/', $matches['type'], $m)) {
+              $this->container['STP'][$m[1]] = $value;
+              continue;
+            }
+          }
+        }
+
+        if ($matched) $this->container['SysAddress'] = $this->host;
+        return $this->container;
       }
     );
   }
@@ -76,6 +107,7 @@ class Walk implements \ArrayAccess, \Stringable
         }
 
         if ($matched) $this->container['SysAddress'] = $this->host;
+        return $this->container;
       }
     );
   }
@@ -110,6 +142,7 @@ class Walk implements \ArrayAccess, \Stringable
                 $this->container['Ports'][$m['counter']]['Remote']['SysAddress'] = $m['ipAddress'];
               }
             }
+            return $this->container;
           }
         );
       }

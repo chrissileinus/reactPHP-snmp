@@ -18,7 +18,7 @@ class tools
 
 
   /**
-   * Get LLDP from every switch and follow the tree through the hole accessable network.
+   * Get LLDP from every switch, follow the tree through the hole accessable network and collect states on the walk.
    *
    * @param  string                          $ipAddress	from Switch where to start the Walk
    * @param  callable|null                   $callback	to run on every result
@@ -26,7 +26,7 @@ class tools
    * @param  bool                            $withInterfaces	if true also collect all interfaces
    * @return \React\Promise\PromiseInterface
    */
-  public static function LLDPWalk(
+  public static function NetWalk(
     string $ipAddress,
     callable $callback = null,
     array &$result = [],
@@ -37,6 +37,7 @@ class tools
     $jobs = [];
     $jobs[] = $result[$ipAddress]->getLLDPlocal();
     $jobs[] = $result[$ipAddress]->getLLDPremote();
+    $jobs[] = $result[$ipAddress]->getSTP();
     if ($withInterfaces) $jobs[] = $result[$ipAddress]->getInterfaces();
 
     return \React\Promise\all($jobs)->then(function () use ($ipAddress, &$result, $callback, $withInterfaces) {
@@ -50,7 +51,7 @@ class tools
           array_key_exists('SysAddress', $entry['Remote']) &&
           !array_key_exists($entry['Remote']['SysAddress'], $result)
         ) {
-          $jobs[] = self::LLDPWalk(
+          $jobs[] = self::NetWalk(
             ipAddress: $entry['Remote']['SysAddress'],
             result: $result,
             callback: $callback,
