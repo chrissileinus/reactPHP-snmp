@@ -48,7 +48,7 @@ class Trap implements \ArrayAccess, \Stringable
 
     if (count($input) > 4) {
       for ($m = 4; $m < count($input); $m++) {
-        if (preg_match('/(\S*)::(\S*) (.*)/', $input[$m], $matches)) {
+        if (preg_match('/(.+)::(\w+).* (.+)/', $input[$m], $matches)) {
           if ($matches[1] == $file) {
             $this->container['event']['content'][$matches[2]] = $matches[3];
           } else {
