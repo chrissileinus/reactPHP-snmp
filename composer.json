@@ -1,5 +1,5 @@
 {
-    "name": "chrissileinus/snmp-php",
+    "name": "chrissileinus/reactphp-snmp",
     "type": "library",
     "autoload": {
         "psr-4": {
