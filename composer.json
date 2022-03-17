@@ -13,6 +13,7 @@
         }
     ],
     "require": {
+        "php": ">=8.0",
         "react/promise": "^2.9",
         "react/child-process": "^0.6.4",
         "react/stream": "^1.2"
