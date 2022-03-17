@@ -162,6 +162,8 @@ class Walk implements \ArrayAccess, \Stringable
 
     $stdout = $this->runStream($this->host, ...$args);
 
+    $result = "";
+
     $stdout->on('data', function ($chunk) use (&$result) {
       $result .= $chunk;
     });
@@ -181,6 +183,8 @@ class Walk implements \ArrayAccess, \Stringable
    */
   public function runStream(...$args): \React\Stream\ReadableStreamInterface
   {
+    if (!`which snmpwalk`) throw new \Exception("snmpwalk ist not installed", 1);
+
     $command = 'snmpwalk -v2c -Oq -c public ' . implode(' ', $args);
 
     $process = new \React\ChildProcess\Process($command);
