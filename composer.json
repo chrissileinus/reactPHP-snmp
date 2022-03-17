@@ -1,6 +1,7 @@
 {
     "name": "chrissileinus/reactphp-snmp",
     "type": "library",
+    "license": "MIT",
     "autoload": {
         "psr-4": {
             "Chrissileinus\\SNMP\\": "src/"
