@@ -12,5 +12,9 @@
             "email": "chrissileinus@googlemail.com"
         }
     ],
-    "require": {}
+    "require": {
+        "react/promise": "^2.9",
+        "react/child-process": "^0.6.4",
+        "react/stream": "^1.2"
+    }
 }
