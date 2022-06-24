@@ -41,7 +41,10 @@ class tools
     if ($withInterfaces) $jobs[] = $result[$ipAddress]->getInterfaces();
 
     return \React\Promise\all($jobs)->then(function () use ($ipAddress, &$result, $callback, $withInterfaces) {
-      if (!isset($result[$ipAddress]['Ports'])) return;
+      if (!isset($result[$ipAddress]['Ports'])) {
+        unset($result[$ipAddress]);
+        return;
+      }
       if (is_callable($callback)) $callback($result[$ipAddress]);
 
       $jobs = [];
